@@ -6,7 +6,7 @@
 /*   By: eel-kerc <eel-kerc@student.42lyon.fr>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 21:33:15 by eel-kerc          #+#    #+#             */
-/*   Updated: 2025/12/03 14:12:54 by eel-kerc         ###   ########lyon.fr   */
+/*   Updated: 2026/11/02 09:48:28 by eel-kerc         ###   ########lyon.fr   */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,7 +47,7 @@ int	check_flags_good(char *flags)
 	return (true);
 }
 
-t_flags	*getting_flags(const char *str, size_t *i, t_flags *flags)
+void	*getting_flags(const char *str, size_t *i, t_flags *flags)
 {
 	char	*f_temp;
 	int		count;
@@ -61,14 +61,17 @@ t_flags	*getting_flags(const char *str, size_t *i, t_flags *flags)
 		(*i)++;
 	}
 	f_temp = ft_substr(str, *i - count, count);
+	if (!f_temp)
+		return (NULL);
 	if (!check_flags_good(f_temp))
 	{
-		free(flags);
+		free(f_temp);
 		write(1, "%", 1);
 		*i -= count;
 		return (NULL);
 	}
 	init_flags(f_temp, flags);
+	flags->type = str[(*i)++];
 	free(f_temp);
 	return (flags);
 }
@@ -91,14 +94,12 @@ int	print_str(const char *str, va_list arg)
 		if (str[i])
 		{
 			getting_flags(str, &i, flags);
-			flags->type = str[i++];
 			if (!check_is_percent(flags, &i, str))
 				bytes += writing_arg(flags, arg);
 			else
 				bytes += 1;
 		}
 	}
-	i = iterating_message(str, i);
 	bytes = bytes + i - flags->len_flags;
 	free(flags);
 	return (bytes);

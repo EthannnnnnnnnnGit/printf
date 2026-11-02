@@ -1,91 +1,101 @@
 NAME := libftprintf.a
 
-FILE := ft_print_args	\
-	ft_printf	\
-	ft_count_len	\
-	ft_write_flags	\
-	ft_write_number	\
+FILE :=\
+	ft_printf		\
+	ft_print_args	\
+	ft_print_int	\
+	ft_print_hexa	\
+	ft_print_decay	\
+	ft_len_nbr		\
+	ft_len_str		\
 
 FILE_LIBFT :=\
-	libft/ft_is_something.c	\
-	libft/ft_strlen.c		\
-	libft/ft_memset.c		\
-	libft/ft_bzero.c		\
-	libft/ft_memcpy.c		\
-	libft/ft_memmove.c		\
-	libft/ft_strlcpy.c		\
-	libft/ft_strlcat.c		\
-	libft/ft_toelse.c		\
-	libft/ft_strchr.c		\
-	libft/ft_strrchr.c		\
-	libft/ft_strncmp.c		\
-	libft/ft_memchr.c		\
-	libft/ft_memcmp.c		\
-	libft/ft_strnstr.c		\
-	libft/ft_atoi.c			\
-	libft/ft_calloc.c		\
-	libft/ft_strdup.c		\
-	libft/ft_substr.c		\
-	libft/ft_strjoin.c		\
-	libft/ft_strtrim.c		\
-	libft/ft_split.c		\
-	libft/ft_itoa.c			\
-	libft/ft_strmapi.c		\
-	libft/ft_striteri.c		\
-	libft/ft_putchar_fd.c	\
-	libft/ft_putstr_fd.c	\
-	libft/ft_putendl_fd.c	\
-	libft/ft_putnbr_fd.c	\
-	libft/ft_lstnew_bonus.c				\
-    libft/ft_lstadd_front_bonus.c		\
-    libft/ft_lstsize_bonus.c			\
-    libft/ft_lstlast_bonus.c			\
-    libft/ft_lstadd_back_bonus.c		\
-    libft/ft_lstdelone_bonus.c			\
-    libft/ft_lstclear_bonus.c			\
-	libft/ft_lstiter_bonus.c			\
-	libft/ft_lstmap_bonus.c			\
+	ft_is_something.c		\
+	ft_strlen.c		\
+	ft_memset.c		\
+	ft_bzero.c		\
+	ft_memcpy.c		\
+	ft_memmove.c		\
+	ft_strlcpy.c		\
+	ft_strlcat.c		\
+	ft_toelse.c		\
+	ft_strchr.c		\
+	ft_strrchr.c		\
+	ft_strncmp.c		\
+	ft_memchr.c		\
+	ft_memcmp.c		\
+	ft_strnstr.c		\
+	ft_atoi.c			\
+	ft_calloc.c		\
+	ft_strdup.c		\
+	ft_substr.c		\
+	ft_strjoin.c		\
+	ft_strtrim.c		\
+	ft_split.c		\
+	ft_itoa.c			\
+	ft_strmapi.c		\
+	ft_striteri.c		\
+	ft_putchar_fd.c		\
+	ft_putstr_fd.c		\
+	ft_putendl_fd.c		\
+	ft_putnbr_fd.c		\
+	ft_lstnew_bonus.c		\
+    ft_lstadd_front_bonus.c	\
+    ft_lstsize_bonus.c	\
+    ft_lstlast_bonus.c	\
+    ft_lstadd_back_bonus.c	\
+    ft_lstdelone_bonus.c	\
+	ft_lstclear_bonus.c	\
+	ft_lstiter_bonus.c	\
+	ft_lstmap_bonus.c		\
 
 OBJSDIR := .objs
 DEPSDIR := .deps
+OBJSDIR_LIBFT := .libftobjs
+DEPSDIR_LIBFT := .libftdeps
 
 SRCS := $(addsuffix .c, $(FILE))
 OBJS := $(addprefix $(OBJSDIR)/, $(addsuffix .o, $(FILE)))
-OBJS_LIBFT := $(patsubst %.c, %.o, $(FILE_LIBFT))
-DEPS := $(addprefix $(DEPSDIR)/, $(patsubst %.o, %.d, $(OBJS)))
-DEPS_LIBFT := libft/.deps/*.d
+OBJS_LIBFT := $(addprefix $(OBJSDIR_LIBFT)/, $(patsubst %.c, %.o, $(FILE_LIBFT)))
+DEPS := $(addprefix $(DEPSDIR_LIBFT)/, $(patsubst %.o, %.d, $(OBJS)))
+DEPS_LIBFT := $(addprefix $(DEPSDIR_LIBFT)/, $(patsubst %.c, %.d, $(FILE_LIBFT)))
 
 CC := cc
 CFLAGS := -Wall -Wextra -Werror
-CINCLUDES := -Iinclude
 
 .PHONY : all clean fclean re bonus
 
 all : $(NAME)
 
-$(NAME) : ft_printf.h libft/libft.h $(OBJS_LIBFT) $(OBJS)
+$(NAME) : libft/libft.h $(OBJS_LIBFT) $(OBJS)
 	ar rcs $@ $^
 
-$(OBJSDIR)/%.o : %.c | $(OBJSDIR) $(DEPSDIR)
-	$(CC) $(CFLAGS) $(CINCLUDES) -c $< -o $@ -MD -MP -MF $(patsubst $(OBJSDIR)/%.o, $(DEPSDIR)/%.d, $@)
+$(OBJSDIR_LIBFT)/%.o : libft/libft.h libft/%.c | $(OBJSDIR_LIBFT) $(DEPSDIR_LIBFT)
+	cd libft ; make $(patsubst $(OBJSDIR_LIBFT)/%.o, %.o, $@)
+	mv $(patsubst $(OBJSDIR_LIBFT)/%.o, libft/%.o, $@) $(OBJSDIR_LIBFT)
+	cp $(patsubst $(DEPSDIR_LIBFT)/%.o, libft/.deps/%.o, $@) $(DEPSDIR_LIBFT)
+
+$(OBJSDIR)/%.o : %.c ft_printf.h $(OBJS_LIBFT)| $(OBJSDIR) $(DEPSDIR)
+	$(CC) $(CFLAGS) -c $< -o $@ -MD -MP -MF $(patsubst $(OBJSDIR)/%.o, $(DEPSDIR)/%.d, $@)
 
 $(OBJSDIR) : 
 	mkdir -p $(OBJSDIR)
 
 $(DEPSDIR) :
 	mkdir -p $(DEPSDIR)
+	
+$(OBJSDIR_LIBFT) : 
+	mkdir -p $(OBJSDIR_LIBFT)
 
-libft/$(OBJSDIR) : 
-	cd libft ; mkdir -p $(OBJSDIR)
-
-libft/$(DEPSDIR) : 
-	cd libft ; mkdir -p $(DEPSDIR)
+$(DEPSDIR_LIBFT) :
+	mkdir -p $(DEPSDIR_LIBFT)
 
 bonus : all
 
 clean : 
 	rm -rf $(OBJSDIR) $(DEPSDIR)
-	rm -rf $(OBJS_LIBFT) $(DEPS_LIBFT)
+	cd libft ; make fclean
+	rm -rf $(OBJSDIR_LIBFT) $(DEPSDIR_LIBFT)
 
 fclean : clean
 	rm -f $(NAME)

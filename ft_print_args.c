@@ -3,103 +3,107 @@
 /*                                                        :::      ::::::::   */
 /*   ft_print_args.c                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eel-kerc <eel-kerc@student.42lyon.fr>      +#+  +:+       +#+        */
+/*   By: eel-kerc <eel-kerc@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/25 21:56:52 by eel-kerc          #+#    #+#             */
-/*   Updated: 2025/12/03 16:39:56 by eel-kerc         ###   ########lyon.fr   */
+/*   Created: 2025/11/29 14:07:48 by eel-kerc          #+#    #+#             */
+/*   Updated: 2025/12/23 14:16:14 by eel-kerc         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ft_printf.h"
 
-void	init_flags(char *f_temp, t_flags *flags)
-{
-	size_t	i;
-
-	flags->negative_decay = char_in_str(f_temp, '-');
-	flags->zero_paded = char_in_str(f_temp, '0');
-	flags->hashtag = char_in_str(f_temp, '#');
-	flags->space = char_in_str(f_temp, ' ');
-	flags->pos_sign = char_in_str(f_temp, '+');
-	flags->len_flags += (ft_strlen(f_temp) + 2);
-	flags->decay = getting_decay_len(f_temp);
-	if (char_in_str(f_temp, '.'))
-	{
-		i = 0;
-		flags->precision = 0;
-		while (f_temp[i] == '-' || f_temp[i] == '0' || f_temp[i] == '#' || f_temp[i] == ' '
-		|| f_temp[i] == '+' || (f_temp[i] >= '0' && f_temp[i] <= '9'))
-			i++;
-		i++;
-		while (f_temp[i] >= '0' && f_temp[i] <= '9')
-		{
-			flags->precision = (flags->precision * 10) + (f_temp[i] - '0');
-			i++;
-		}
-	}
-	else
-		flags->precision = -1;
-}
-
-void	print_decay(t_flags *flags)
+size_t	writing_char(t_flags *flags, va_list arg)
 {
 	char	c;
 
-	if (flags->zero_paded && flags->decay > 0 && (flags->type != 'c'
-			&& flags->type != 's' && flags->type != '%' && flags->type != 'p'))
-		c = '0';
-	else
-		c = ' ';
-	while (flags->decay > (int)flags->len_arg)
-	{
-		write(1, &c, 1);
-		flags->decay--;
-	}
+	flags->len_arg = 1;
+	c = va_arg(arg, int);
+	writing_flags(flags, false);
+	write(1, &c, 1);
+	return (writing_flags(flags, true));
 }
 
-int	getting_decay_len(char *f_temp)
+size_t	writing_string(t_flags *flags, va_list arg)
 {
-	int	i;
-	int	decay;
+	size_t	i;
+	char	*str;
 
+	str = (char *)va_arg(arg, char *);
+	flags->len_arg = get_size_str(flags, str);
+	if (!str)
+	{
+		writing_flags(flags, false);
+		if (flags->precision >= 6 || flags->precision == -1)
+			write(1, "(null)", flags->len_arg);
+		else
+			flags->len_arg = 0;
+		return (writing_flags(flags, true));
+	}
+	writing_flags(flags, false);
 	i = 0;
-	while (f_temp[i] == '-' || f_temp[i] == '0' || f_temp[i] == '#'
-		|| f_temp[i] == ' ' || f_temp[i] == '+')
-		i++;
-	decay = 0;
-	while (f_temp[i] >= '0' && f_temp[i] <= '9')
+	while (i < flags->len_arg)
+		write(1, &str[i++], 1);
+	return (writing_flags(flags, true));
+}
+
+size_t	writing_pointer(t_flags *flags, va_list arg)
+{
+	uintptr_t	ptr;
+
+	ptr = (uintptr_t)va_arg(arg, uintptr_t);
+	if (!ptr)
 	{
-		decay = (decay * 10) + (f_temp[i] - '0');
-		i++;
+		flags->len_arg = 5;
+		writing_flags(flags, false);
+		write(1, "(nil)", 5);
+		return (writing_flags(flags, true));
 	}
-	return (decay);
+	flags->len_arg = count_ptr_len(ptr);
+	flags->precision = get_max((flags->precision - flags->len_arg), 0);
+	flags->len_arg += flags->precision + get_max(flags->sign, flags->space) + 2;
+	writing_flags(flags, false);
+	if (flags->sign)
+		write(1, "+", 1);
+	else if (flags->space)
+		write(1, " ", 1);
+	write(1, "0x", 2);
+	write_zero(flags);
+	print_hexa(ptr, "0123456789abcdef");
+	return (writing_flags(flags, true));
 }
 
-void	decrease_decay_flags(t_flags *flags)
+char	check_is_percent(t_flags *flags, size_t *i, const char *str)
 {
-	if (flags->pos_sign && (flags->type == 'p' || flags->type == 'i' || flags->type == 'd'))
-		flags->decay -= 1;
-	else if (flags->space
-		&& (flags->type == 'p' || flags->type == 'i' || flags->type == 'd'))
-		flags->decay -= 1;
-	if (flags->decay < 0)
-		flags->decay = 0;
+	if (flags->type == '%')
+	{
+		while (str[*i - 1] != '%')
+			(*i)--;
+		write(1, "%", 1);
+		return (true);
+	}
+	return (false);
 }
 
-size_t	writing_flags(t_flags *flags,bool printed)
+size_t	writing_arg(t_flags *flags, va_list arg)
 {
-	int	bytes_flags;
-	int	temp_decay;
-
-	temp_decay = flags->decay;
-	bytes_flags = flags->decay - flags->len_arg;
-	decrease_decay_flags(flags);
-	if (!printed && !flags->negative_decay)
-		print_decay(flags);
-	if (printed && flags->negative_decay)
-		print_decay(flags);
-	flags->decay = temp_decay;
-	if (bytes_flags < 0)
-		return (flags->len_arg);
-	return (bytes_flags + flags->len_arg);
+	if (flags->type == 'c')
+		return (writing_char(flags, arg));
+	else if (flags->type == 's')
+		return (writing_string(flags, arg));
+	else if (flags->type == 'p')
+		return (writing_pointer(flags, arg));
+	else if (flags->type == 'd')
+		return (print_number(flags, arg, 'd'));
+	else if (flags->type == 'i')
+		return (print_number(flags, arg, 'i'));
+	else if (flags->type == 'u')
+		return (print_number(flags, arg, 'u'));
+	else if (flags->type == 'x')
+		return (print_number_base(flags, arg, "0123456789abcdef"));
+	else if (flags->type == 'X')
+		return (print_number_base(flags, arg, "0123456789ABCDEF"));
+	else if (flags->type == '%')
+		return (write(1, "%", 1));
+	else
+		return (write(1, &flags->type, 1));
 }

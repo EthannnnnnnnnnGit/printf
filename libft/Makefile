@@ -50,12 +50,10 @@ OBJSDIR := .objs
 DEPSDIR := .deps
 
 SRCS := $(addsuffix .c, $(FILE))
-#OBJS := $(patsubst %.c, %.o, $(SRCS))
 OBJS := $(addprefix $(OBJSDIR)/, $(patsubst %.c, %.o, $(SRCS)))
 DEPS := $(addprefix $(DESPDIR)/, $(addsuffix .d, $(FILE)))
 
 SRCS_BON := $(addsuffix _bonus.c, $(FILE_BON))
-#OBJS_BON := $(patsubst %.c, %.o, $(SRCS_BON))
 OBJS_BON := $(addprefix $(OBJSDIR)/, $(patsubst %.c, %.o, $(SRCS_BON)))
 DEPS_BON := $(addprefix $(DEPSDIR)/, $(patsubst %.c, %.d, $(SRCS_BON)))
 
@@ -65,9 +63,6 @@ all : $(NAME)
 
 $(NAME) : libft.h $(OBJS)
 	ar rcs $@ $^
-
-#%.o : %.c libft.h | $(DEPSDIR) $(OBJSDIR)
-#	$(CC) $(CFLAGS) -Iincludes -c $< -o $@ -MD -MP -MF $(patsubst %.o, $(DEPSDIR)/%.d, $@)
 
 $(OBJSDIR)/%.o : %.c libft.h | $(DEPSDIR) $(OBJSDIR)
 	$(CC) $(CFLAGS) -c $< -o $@ -MD -MP -MF $(patsubst $(OBJSDIR)/%.o, $(DEPSDIR)/%.d, $@)
